@@ -1,14 +1,13 @@
 const { NotFound } = require('http-errors');
 
-const modelContacts = require('../models/contacts.model');
+const Contact = require('../models/contacts.model');
 
 async function getContacts() {
-  const result = await modelContacts.listContacts();
-  return result;
+  return Contact.find();
 }
 
 async function getContactById(contactId) {
-  const user = await modelContacts.getContactById(contactId);
+  const user = await Contact.findById(contactId);
   if (!user) {
     throw new NotFound('User not found');
   }
@@ -16,25 +15,24 @@ async function getContactById(contactId) {
 }
 
 async function createContact(body) {
-  const result = await modelContacts.addContact(body);
-  return result;
+  return Contact.create(body);
 }
 
 async function removeContact(contactId) {
-  const user = await modelContacts.getContactById(contactId);
+  const user = await Contact.findByIdAndDelete(contactId);
   if (!user) {
     throw new NotFound('User not found');
   }
-  await modelContacts.removeContact(contactId);
 }
 
 async function updateContact(contactId, body) {
-  const user = await modelContacts.getContactById(contactId);
+  const user = await Contact.findByIdAndUpdate(contactId, body, {
+    new: true,
+  });
   if (!user) {
     throw new NotFound('User not found');
   }
-  const updatedContact = await modelContacts.updateContact(contactId, body);
-  return updatedContact;
+  return user;
 }
 
 module.exports = {

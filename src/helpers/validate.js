@@ -1,4 +1,8 @@
-exports.validate = (schema, reqPart = 'body') => {
+const {
+  Types: { ObjectId },
+} = require('mongoose');
+
+function validate(schema, reqPart = 'body') {
   return (req, res, next) => {
     const validationResult = schema.validate(req[reqPart], {
       stripUnknown: true,
@@ -11,4 +15,18 @@ exports.validate = (schema, reqPart = 'body') => {
 
     next();
   };
-};
+}
+
+function validateId(req, res, next) {
+  const {
+    params: { contactId },
+  } = req;
+
+  if (!ObjectId.isValid(contactId)) {
+    return res.status(400).send('Your id is not valid');
+  }
+
+  next();
+}
+
+module.exports = { validate, validateId };
