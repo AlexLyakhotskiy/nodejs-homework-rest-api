@@ -5,7 +5,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 
-const contactsRouter = require('./routes/contacts.routes');
+const usersRouter = require('./users/users.routes');
+const contactsRouter = require('./contacts/contacts.routes');
 
 class Server {
   async start() {
@@ -51,6 +52,7 @@ class Server {
   }
 
   initRoutes() {
+    this.server.use('/api/users', usersRouter);
     this.server.use('/api/contacts', contactsRouter);
   }
 
