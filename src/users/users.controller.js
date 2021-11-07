@@ -1,10 +1,12 @@
-const { Conflict, Unauthorized } = require('http-errors');
+const { Conflict, Unauthorized, BadRequest } = require('http-errors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { promises: fsPromises } = require('fs');
+const path = require('path');
 
 const User = require('./users.model');
 
-async function signUp(userCreateParams) {
+async function signUp(userCreateParams, userFile) {
   const { email, password } = userCreateParams;
 
   const existingUser = await User.findOne({ email });
@@ -14,8 +16,14 @@ async function signUp(userCreateParams) {
 
   const hashedPassword = await bcrypt.hash(password, 2);
 
+  const userAvatar = {};
+  if (userFile) {
+    userAvatar.avatarURL = userFile.filename;
+  }
+
   const newUser = await User.create({
     ...userCreateParams,
+    ...userAvatar,
     password: hashedPassword,
   });
 
@@ -55,9 +63,33 @@ async function updateSubscription(subscriptionParams) {
   return updatedUser;
 }
 
+async function updateAvatar({ file, user }) {
+  if (!file) {
+    throw new BadRequest('avatarURL is required');
+  }
+
+  if (file.filename !== user.avatarURL) {
+    const avatarPath = path.join(
+      __dirname,
+      '../../public/avatars',
+      user.avatarURL,
+    );
+
+    await fsPromises.unlink(avatarPath);
+  }
+
+  const body = { avatarURL: file.filename };
+
+  const updatedUser = await User.findByIdAndUpdate(user._id, body, {
+    new: true,
+  });
+  return updatedUser;
+}
+
 module.exports = {
   signUp,
   signIn,
   logout,
   updateSubscription,
+  updateAvatar,
 };

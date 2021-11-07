@@ -2,12 +2,15 @@ const express = require('express');
 const router = express.Router();
 
 const { validate } = require('../helpers/validate');
+const { upload } = require('../services/file-upload');
+const { minifyImage } = require('../services/minifyImage');
 const { authorize } = require('./authorize.middleware');
 const {
   signUp,
   signIn,
   logout,
   updateSubscription,
+  updateAvatar,
 } = require('./users.controller');
 const {
   signupSchema,
@@ -16,14 +19,21 @@ const {
 } = require('./users.schema');
 const { prepareUser, prepareUserWithToken } = require('./users.serializer');
 
-router.post('/signup', validate(signupSchema), async (req, res, next) => {
-  try {
-    const user = await signUp(req.body);
-    return res.status(201).send(prepareUser(user));
-  } catch (err) {
-    next(err);
-  }
-});
+router.post(
+  '/signup',
+
+  upload.single('avatarURL'),
+  validate(signupSchema),
+  minifyImage,
+  async (req, res, next) => {
+    try {
+      const user = await signUp(req.body, req.file);
+      return res.status(201).send(prepareUser(user));
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 router.post('/login', validate(loginSchema), async (req, res, next) => {
   try {
@@ -59,6 +69,21 @@ router.patch(
     try {
       const { user, body } = req;
       const updateUser = await updateSubscription({ user, body });
+      return res.status(200).send(prepareUser(updateUser));
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+router.patch(
+  '/avatars',
+  authorize,
+  upload.single('avatarURL'),
+  minifyImage,
+  async (req, res, next) => {
+    try {
+      const updateUser = await updateAvatar(req);
       return res.status(200).send(prepareUser(updateUser));
     } catch (err) {
       next(err);
