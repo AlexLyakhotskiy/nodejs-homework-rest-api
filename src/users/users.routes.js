@@ -11,17 +11,19 @@ const {
   logout,
   updateSubscription,
   updateAvatar,
+  verificationUser,
+  sendAnotherVerifyEmail,
 } = require('./users.controller');
 const {
   signupSchema,
   loginSchema,
   updateUserSchema,
+  verifyUserSchema,
 } = require('./users.schema');
 const { prepareUser, prepareUserWithToken } = require('./users.serializer');
 
 router.post(
   '/signup',
-
   upload.single('avatarURL'),
   validate(signupSchema),
   minifyImage,
@@ -90,5 +92,23 @@ router.patch(
     }
   },
 );
+
+router.get('/verify/:verifyToken', async (req, res, next) => {
+  try {
+    await verificationUser(req.params);
+    return res.status(200).send('Verification successful');
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/verify', validate(verifyUserSchema), async (req, res, next) => {
+  try {
+    await sendAnotherVerifyEmail(req.body);
+    return res.status(200).send('Verification email sent');
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = router;

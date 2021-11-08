@@ -1,10 +1,13 @@
-const { Conflict, Unauthorized, BadRequest } = require('http-errors');
+const { Conflict, Unauthorized, BadRequest, NotFound } = require('http-errors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { promises: fsPromises } = require('fs');
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 
 const User = require('./users.model');
+
+const { mailingClient } = require('../services/mailing.client');
 
 async function signUp(userCreateParams, userFile) {
   const { email, password } = userCreateParams;
@@ -25,7 +28,10 @@ async function signUp(userCreateParams, userFile) {
     ...userCreateParams,
     ...userAvatar,
     password: hashedPassword,
+    verifyToken: uuidv4(),
   });
+
+  await mailingClient.sendVerificationEmail(email, newUser.verifyToken);
 
   return newUser;
 }
@@ -41,6 +47,10 @@ async function signIn(signInParams) {
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
     throw new Unauthorized('Email or password is wrong');
+  }
+
+  if (!user.verify) {
+    throw new Unauthorized('Not verified user');
   }
 
   const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
@@ -86,10 +96,42 @@ async function updateAvatar({ file, user }) {
   return updatedUser;
 }
 
+async function verificationUser(userParams) {
+  const { verifyToken } = userParams;
+
+  const user = await User.findOne({ verifyToken });
+
+  if (!user) {
+    throw new NotFound('User not found');
+  }
+
+  await User.findByIdAndUpdate(user._id, {
+    verifyToken: null,
+    verify: true,
+  });
+}
+
+async function sendAnotherVerifyEmail(verifyParams) {
+  const { email } = verifyParams;
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new NotFound('User not found');
+  }
+
+  if (user.verify) {
+    throw new BadRequest('Verification has already been passed');
+  }
+
+  await mailingClient.sendVerificationEmail(email, user.verifyToken);
+}
+
 module.exports = {
   signUp,
   signIn,
   logout,
   updateSubscription,
   updateAvatar,
+  verificationUser,
+  sendAnotherVerifyEmail,
 };

@@ -6,23 +6,29 @@ const {
   createContactSchema,
   updateContactSchema,
   updateFavoriteSchema,
+  getContactsSchema,
 } = require('./contacts.schema');
 
 const { authorize } = require('../users/authorize.middleware');
 
 const controllerContacts = require('./contacts.controller');
 
-router.get('/', authorize, async (req, res, next) => {
-  try {
-    const contacts = await controllerContacts.getContacts(
-      req.user._id,
-      req.query,
-    );
-    return res.status(200).send(contacts);
-  } catch (err) {
-    next(err);
-  }
-});
+router.get(
+  '/',
+  authorize,
+  validate(getContactsSchema, 'query'),
+  async (req, res, next) => {
+    try {
+      const contacts = await controllerContacts.getContacts(
+        req.user._id,
+        req.query,
+      );
+      return res.status(200).send(contacts);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 router.get('/:contactId', authorize, validateId, async (req, res, next) => {
   try {

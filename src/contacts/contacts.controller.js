@@ -3,14 +3,10 @@ const { NotFound } = require('http-errors');
 const Contact = require('./contacts.model');
 
 async function getContacts(userId, queryParams) {
-  let { favorite, page, limit } = queryParams;
+  let { favorite, page = 1, limit = 4 } = queryParams;
   const query = { owner: userId };
 
-  if (favorite && favorite === ('false' || 'true')) query.favorite = favorite;
-  if (isNaN(+limit)) limit = 10;
-  if (isNaN(+page)) page = 1;
-  if (limit > 50) limit = 50;
-  if (limit < 4) limit = 4;
+  if (favorite) query.favorite = favorite;
 
   const result = await Contact.paginate(query, { page, limit });
 
