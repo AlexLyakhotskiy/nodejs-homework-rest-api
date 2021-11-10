@@ -14,3 +14,7 @@ exports.loginSchema = Joi.object({
 exports.updateUserSchema = Joi.object({
   subscription: Joi.string().valid('starter', 'pro', 'business').required(),
 });
+
+exports.verifyUserSchema = Joi.object({
+  email: Joi.string().email().required(),
+});

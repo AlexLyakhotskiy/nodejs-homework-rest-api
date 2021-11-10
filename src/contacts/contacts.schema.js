@@ -1,5 +1,11 @@
 const Joi = require('joi');
 
+exports.getContactsSchema = Joi.object({
+  page: Joi.number(),
+  limit: Joi.number().min(4).max(50),
+  favorite: Joi.boolean(),
+});
+
 exports.createContactSchema = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().email().required(),
